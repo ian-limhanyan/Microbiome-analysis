@@ -76,6 +76,118 @@ alpha.div %>%
 linear_model <-lm(Shannon ~ BMI, alpha.div)
 summary(linear_model)
 
+## 2) Beta diversity ##
+## Next let's explore beta diversity, comparing between before vs after consuming probiotics (Timepoint 1 and Timepoint 2)
+
+# But first, let's filter our phyloseq object 'ps'. One method is to filter using a threshold based on the max read count
+# To remove low ASV counts, first check total read counts of each ASV
+head(taxa_sums(ps)) # snippet of the first few ASVs
+summary(taxa_sums(ps)) # report summary stats
+ps # show how many taxa before filtering
+
+# Filter using threshold based on max count (such as 0.001%)
+threshold = max(taxa_sums(ps))*(0.001/100) # identify taxa which counts are higher or lower than 0.001% of the max count
+ps.filt = prune_taxa(taxa_sums(ps) > threshold, ps) # keep taxa with counts higher than 0.001% of the max count
+ps.filt # show how many taxa after filtering
+
+# Now, we can use the filtered phyloseq 'ps.filt' for exploring beta diversity
+# a. Aitchison - clr transformation
+ps.clr <- microbiome::transform(ps.filt, 'clr')
+euc_dist = phyloseq::distance(otu_table(ps.clr), method="euclidean")
+ord_euc = ordinate(ps.clr, method = 'PCoA', distance=euc_dist)
+
+# b. Bray curtis 
+bray_dist = phyloseq::distance(otu_table(ps.filt), method="bray")
+ord_bray = ordinate(ps.filt, method = 'PCoA', distance=bray_dist)
+
+# c. Jaccard 
+jac_dist = phyloseq::distance(otu_table(ps.filt), method="jaccard")
+ord_jac = ordinate(ps.filt, method = 'PCoA', distance=jac_dist)
+
+# Define the color mapping for the probiotic type 'Probiotics_Formulation'
+probiotic_color_mapping <- c(
+  "Formulation Red" = "red",
+  "Formulation Green" = "green",
+  "Formulation Blue" = "blue",
+  "Formulation Orange" = "orange"
+)
+
+# Function to create a PCoA plot based on the specified distance
+create_pcoa_plot <- function(data, ordination, color_var, title, hide_legend) {
+  p <- plot_ordination(data, ordination, color = color_var, shape = "Timepoint") +
+    theme(aspect.ratio = 1) +
+    ggtitle(title) +
+    theme(
+      plot.title = element_text(size = 14),
+      panel.border = element_blank(),
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank()
+    ) +
+    geom_point(
+      size = 5,
+      aes(color = Probiotics_Formulation, shape = Timepoint, size = 2, stroke = 1)
+    ) +
+    geom_line(aes(group = Subject),color="grey") +
+    scale_color_manual(values = probiotic_color_mapping) +
+    scale_shape_manual(
+      values = c("Pre-probiotics" = 17, "Post-probiotics" = 19),
+      breaks = c("Pre-probiotics", "Post-probiotics")
+    ) +
+    theme_bw() +
+    no_grid_theme +
+    geom_text_repel(aes(label = Subject_Timepoint), size = 3) +
+    labs(
+      color = 'Probiotics_Formulation',
+      shape = 'Timepoint'
+    )
+  
+  # Hide the legend if specified
+  if (hide_legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  return(p)
+}
+
+# Create PCoA plots for Euclidean, Bray-Curtis, and Jaccard distances
+aitchison.plot <- create_pcoa_plot(ps.clr, ord_euc, "Subject_Timepoint", "PCoA plot based on Aitchison distance", TRUE)
+bray.plot <- create_pcoa_plot(ps.filt, ord_bray, "Subject_Timepoint", "PCoA plot based on Bray-Curtis", TRUE)  # Hide legend
+jac.plot <- create_pcoa_plot(ps.filt, ord_jac, "Subject_Timepoint", "PCoA plot based on Jaccard", TRUE)
+
+# Arrange the plots in a grid
+beta.plot <- grid.arrange(aitchison.plot, bray.plot, jac.plot, ncol = 1)
+aitchison.plot
+bray.plot
+jac.plot
+
+## 3) Relative abundance of bacterial taxa ##
+
+# a. Let's start with observing changes after consuming probiotics in the genera level
+# Assuming you have the required data prepared in a data frame called 'ps_melt'
+# The 'ps_melt' should contain the following column data: Genus_Species (Species name), Subject (Subject ID), Abundance (raw/relative abundance), Timepoint (T1, T2)
+
+# Melt ps_filt object to produce bar graphs easily
+ps_filt_melt <- psmelt(ps.filt)
+
+# Create a stacked bar plot for all 5 subjects with "Pre-probiotics" graph above "Post-probiotics"
+stacked_plot <- ggplot(ps_melt, aes(x = Genus, y = Abundance, fill = Subject)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.7) +
+  facet_wrap(~Timepoint, scales = "free_x", ncol = 1) +
+  labs(x = "", y = "Abundance", fill = "Subject") +
+  scale_fill_manual(values = c("S1" = "pink", "S2" = "purple", "S3" = "orange", "S4" = "blue", "S5" = "green")) +
+  ggtitle("Stacked Abundance of Genera by Subject (T1 & T2)") +
+  theme_minimal()
+
+# Print the stacked genera plot
+print(stacked_plot)
+
+# b. Let's check one of our probiotic formulations, if the subjects who consumed it have elevated levels of the strains the probiotics were meant to elevate
+# List the strains for Formulation Red
+formulation_red_strains <- c("strainA", "strainB", "strainC")
+
+
+
 ### In progress...
 
 
