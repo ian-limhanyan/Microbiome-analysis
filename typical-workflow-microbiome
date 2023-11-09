@@ -16,6 +16,66 @@ library(microbiome) # For extending phyloseq & provides tools for manipulation, 
 library(phyloseq)   # For importing, storing, manipulating, visualizing, and analyzing high-throughput microbiome census data.
 library(vegan)      # For community ecology analysis consisting methods such as ordination, diversity, clustering, etc.
 
+## 1) Alpha diversity ##
+# Generate α-diversity metrics. Typically Shannon is used, but we'll try plotting 3 different α-diversity metrics today.
+alpha.div = estimate_richness(ps, measures = c('Shannon', 'Simpson', 'Observed')) # our phyloseq object is named 'ps'
+alpha.div <- merge(alpha.div, met, by = 'row.names') # merge alpha diversity score table with metadata table
+
+# Optional: Define custom x-axis labels for the subjects & their respective Timepoints (10 data labels in total)
+custom_labels <- c("S1_T1" = "S1\nT1", "S1_T2" = "S1\nT2", 
+                   "S2_T1" = "S2\nT1", "S2_T2" = "S2\nT2", 
+                   "S3_T1" = "S3\nT1", "S3_T2" = "S3\nT2", 
+                   "S4_T1" = "S4\nT1", "S4_T2" = "S4\nT2", 
+                   "S5_T1" = "S5\nT1", "S5_T2" = "S5\nT2")
+
+# Create a theme without gridlines (for aesthetic purposes)
+no_grid_theme <- theme(panel.grid.major = element_blank(), 
+                       panel.grid.minor = element_blank())
+
+# Function to create plots
+create_alphaplot <- function(metric) {
+  plot <- alpha.div %>%
+    ggplot(aes(x = Subject_Timepoint, y = get(metric), color = Subject_Timepoint)) + 
+    geom_boxplot() +
+    scale_color_manual(values = color_mapping, guide = FALSE) +
+    ggtitle(metric) +
+    theme_bw() +
+    xlab("Subject_Timepoint") +
+    ylab(metric) +
+    scale_x_discrete(labels = custom_labels) +  # Set custom x-axis labels
+    no_grid_theme
+  return(plot)
+}
+
+# Create plots for the 3 α-diversity metrics
+Shannon.plot <- create_alphaplot('Shannon')
+Simpson.plot <- create_alphaplot('Simpson')
+Observed.plot <- create_alphaplot('Observed')
+
+# Arrange all 3 plots in one image
+alpha.plot <- grid.arrange(Shannon.plot, Simpson.plot, Observed.plot, ncol = 1)
+
+## Out of curiosity, we can do 3 other tests to compare alpha diversity against demographic variables.
+# a. Let's try plotting Shannon against demographic variables (even though the sample size is small for any statistical significance)
+# For example, Ethnicity, BMI, Gender
+## BMI and Shannon
+alpha.div %>%
+  filter(!is.na(BMI)) %>%
+  ggplot(aes(x = BMI, y = Shannon)) + geom_boxplot()
+
+# b. Let's test the "significance" of difference of different demographic variables with Shannon diversity
+kruskal.test(Shannon ~ BMI, data = alpha.div)
+kruskal.test(Shannon ~ Gender, data = alpha.div)
+kruskal.test(Shannon ~ Current_Diets, data = alpha.div)
+
+# c. Lastly, let's see amongst the 5 subjects, if there is any relationship between demographic variables and Shannon diversity
+alpha.div %>%
+  filter(!is.na(BMI)) %>%
+  ggplot(aes(x=Shannon, y=BMI)) + geom_point()
+
+linear_model <-lm(Shannon ~ BMI, alpha.div)
+summary(linear_model)
+
 ### In progress...
 
 
