@@ -1,0 +1,26 @@
+## A typical workflow for microbiome analyses.
+
+# Considering you have a phyloseq object ready, we can do some exploratory microbiome analyses.
+# In this example, our aim is to compare the gut profile of individuals before vs after consuming probiotics.
+# The workflow is as follows:
+# 1) Alpha diversity
+# 2) Beta diversity 
+# 3) Relative abundance 
+# 4) Differential abundance analysis
+
+# Load main R packages for microbiome analysis
+library(ggplot2)    # For graphical visualizations.
+library(ggsignif)   # For adding significance annotations to ggplot2 plots
+library(Maaslin2)   # For studying multivariable associations.
+library(microbiome) # For extending phyloseq & provides tools for manipulation, analysis, visualization etc.
+library(phyloseq)   # For importing, storing, manipulating, visualizing, and analyzing high-throughput microbiome census data.
+library(vegan)      # For community ecology analysis consisting methods such as ordination, diversity, clustering, etc.
+
+
+
+
+
+
+
+
+
