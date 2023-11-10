@@ -16,7 +16,7 @@ library(microbiome) # For extending phyloseq & provides tools for manipulation, 
 library(phyloseq)   # For importing, storing, manipulating, visualizing, and analyzing high-throughput microbiome census data.
 library(vegan)      # For community ecology analysis consisting methods such as ordination, diversity, clustering, etc.
 
-## 1) Alpha diversity ##
+### 1) Alpha diversity ###
 # Generate α-diversity metrics. Typically Shannon is used, but we'll try plotting 3 different α-diversity metrics today.
 alpha.div = estimate_richness(ps, measures = c('Shannon', 'Simpson', 'Observed')) # our phyloseq object is named 'ps'
 alpha.div <- merge(alpha.div, met, by = 'row.names') # merge alpha diversity score table with metadata table
@@ -76,7 +76,7 @@ alpha.div %>%
 linear_model <-lm(Shannon ~ BMI, alpha.div)
 summary(linear_model)
 
-## 2) Beta diversity ##
+### 2) Beta diversity ###
 ## Next let's explore beta diversity, comparing between before vs after consuming probiotics (Timepoint 1 and Timepoint 2)
 
 # But first, let's filter our phyloseq object 'ps'. One method is to filter using a threshold based on the max read count
@@ -161,9 +161,10 @@ aitchison.plot
 bray.plot
 jac.plot
 
-## 3) Relative abundance of bacterial taxa ##
 
-# a. Let's start with observing changes after consuming probiotics in the genera level
+### 3) Relative abundance of bacterial taxa ###
+
+## a. Let's start with observing changes after consuming probiotics in the genera level
 # Assuming you have the required data prepared in a data frame called 'ps_melt'
 # The 'ps_melt' should contain the following column data: Genus_Species (Species name), Subject (Subject ID), Abundance (raw/relative abundance), Timepoint (T1, T2)
 
@@ -182,13 +183,58 @@ stacked_plot <- ggplot(ps_melt, aes(x = Genus, y = Abundance, fill = Subject)) +
 # Print the stacked genera plot
 print(stacked_plot)
 
-# b. Let's check one of our probiotic formulations, if the subjects who consumed it have elevated levels of the strains the probiotics were meant to elevate
+
+## b. Calculate the Firmicutes/Bacteroidota ratio in each subject for both Pre-probiotics and Post-probiotics (for each subject)
+# Initialize an empty data frame to store the results
+result_table <- data.frame(
+    Subject = unique(sample_data(ps)$Subject),
+    Pre_Firmicutes = 0,
+    Pre_Bacteroidota = 0,
+    Post_Firmicutes = 0,
+    Post_Bacteroidota = 0
+)
+
+subjects <- unique(sample_data(ps)$Subject)
+
+for (i in 1:length(subjects)) {
+    subject <- subjects[i]
+    
+    pre_data <- subset_samples(ps, Subject == subject & Timepoint == "Pre-probiotics")
+    post_data <- subset_samples(ps, Subject == subject & Timepoint == "Post-probiotics")
+    
+    otu_table <- otu_table(ps)
+    tax_table <- tax_table(ps)
+    
+    firmicutes_taxa <- which(tax_table[, "Phylum"] == "Firmicutes")
+    bacteroidota_taxa <- which(tax_table[, "Phylum"] == "Bacteroidota")
+    
+    get_values <- function(data, taxa) {
+        rowSums(otu_table[taxa, sample_data(data)$Subject == subject])
+    }
+    
+    result_table[i, c("Pre_Firmicutes", "Pre_Bacteroidota")] <- get_values(pre_data, firmicutes_taxa)
+    result_table[i, c("Post_Firmicutes", "Post_Bacteroidota")] <- get_values(post_data, firmicutes_taxa)
+}
+
+print(result_table)
+
+### In progress...
+
+## c. Let's check one of our probiotic formulations, if the subjects who consumed it have elevated levels of the strains the probiotics were meant to elevate
+
 # List the strains for Formulation Red
 formulation_red_strains <- c("strainA", "strainB", "strainC")
 
+# Create a general function to generate horizontal bar plots, we can use this function for other probiotic formulation we want to check
+
+# Initialize a list to store the plot objects
+
+# Create and save horizontal bar plots for beneficial and pathogenic species
 
 
-### In progress...
+
+
+
 
 
 
