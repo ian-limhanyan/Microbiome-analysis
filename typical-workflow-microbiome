@@ -17,6 +17,9 @@ library(phyloseq)   # For importing, storing, manipulating, visualizing, and ana
 library(vegan)      # For community ecology analysis consisting methods such as ordination, diversity, clustering, etc.
 
 ### 1) Alpha diversity ###
+# First, round the values in the OTU table to integers
+otu_table(ps_total_counts) <- round(otu_table(ps_total_counts))
+
 # Generate α-diversity metrics. Typically Shannon is used, but we'll try plotting 3 different α-diversity metrics today.
 alpha.div = estimate_richness(ps, measures = c('Shannon', 'Simpson', 'Observed')) # our phyloseq object is named 'ps'
 alpha.div <- merge(alpha.div, met, by = 'row.names') # merge alpha diversity score table with metadata table
