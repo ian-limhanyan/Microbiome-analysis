@@ -139,7 +139,7 @@ create_pcoa_plot <- function(data, ordination, color_var, title, hide_legend) {
     ) +
     theme_bw() +
     no_grid_theme +
-    geom_text_repel(aes(label = Subject_Timepoint), size = 3) +
+    geom_text_repel(aes(label = Subject_Timepoint), size = 3, box.padding = 1) + # boxpadding for distance between label & point
     labs(
       color = 'Probiotics_Formulation',
       shape = 'Timepoint'
